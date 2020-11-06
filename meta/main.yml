@@ -1,0 +1,21 @@
+galaxy_info:
+  author: Dmitrij Petrov
+  description: Manage Kubernetes content
+
+  license: MIT
+
+  min_ansible_version: 2.9
+
+  platforms:
+   - name: Redhat
+     versions:
+      - all
+   - name: Debian
+     versions:
+      - all
+
+  galaxy_tags:
+    - k8s
+    - kubernetes
+
+dependencies: []

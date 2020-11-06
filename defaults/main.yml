@@ -1,0 +1,38 @@
+---
+
+k8s_mgmt_registry_custom: true
+k8s_mgmt_patch_deployment: false
+
+k8s_mgmt_app_group: ''
+k8s_mgmt_app_name: ''
+k8s_mgmt_app_state: present
+k8s_mgmt_ns: tmp
+k8s_mgmt_ns_state: present
+k8s_mgmt_app_replicas: 1
+k8s_mgmt_app_min_replicas: ''
+k8s_mgmt_app_max_replicas: '{{ k8s_mgmt_app_replicas }}'
+k8s_mgmt_app_cpu_target_average_utilization: 90
+k8s_mgmt_app_memory_target_average_value: ''
+k8s_mgmt_app_revision_history_limit: 10
+k8s_mgmt_app_rolling_update_partition: 0
+k8s_mgmt_app_rolling_update_max_surge: 1
+k8s_mgmt_app_rolling_update_max_unavailable: 1
+k8s_mgmt_image_name: ''
+k8s_mgmt_image_tag: latest
+k8s_mgmt_app_request_memory: 256Mi
+k8s_mgmt_app_request_cpu: 256m
+k8s_mgmt_app_limit_memory: '{{ k8s_mgmt_app_request_memory }}'
+k8s_mgmt_app_limit_cpu: '{{ k8s_mgmt_app_request_cpu }}'
+k8s_mgmt_app_port: ''
+k8s_mgmt_app_probe_initial_delay_seconds: 30
+k8s_mgmt_app_probe_period_seconds: 10
+k8s_mgmt_service_name: '{{ k8s_mgmt_app_name }}'
+k8s_mgmt_service_port: ''
+k8s_mgmt_service_state: '{{ k8s_mgmt_app_state }}'
+k8s_mgmt_configmap: ''
+k8s_mgmt_configmap_name: '{{ k8s_mgmt_app_name }}'
+k8s_mgmt_configmap_state: '{{ k8s_mgmt_app_state }}'
+k8s_mgmt_deployment_name: '{{ k8s_mgmt_app_name }}'
+k8s_mgmt_deployment_state: '{{ k8s_mgmt_app_state }}'
+k8s_mgmt_hpa_name: '{{ k8s_mgmt_app_name }}'
+k8s_mgmt_hpa_state: '{{ k8s_mgmt_app_state }}'

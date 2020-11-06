@@ -1,0 +1,106 @@
+---
+
+- name: docker login
+  docker_login:
+    registry: '{{ k8s_mgmt_registry_url }}'
+    username: '{{ k8s_mgmt_registry_username }}'
+    password: '{{ k8s_mgmt_registry_password }}'
+    reauthorize: yes
+  when: k8s_mgmt_registry_custom | bool
+
+- name: get docker config
+  slurp:
+    src: ~/.docker/config.json
+  register: k8s_get_docker_config
+
+- name: apply secret registry
+  k8s:
+    definition:
+      apiVersion: v1
+      kind: Secret
+      metadata:
+        name: registry
+        namespace: '{{ k8s_mgmt_ns }}'
+      data:
+        .dockerconfigjson: "{{ k8s_get_docker_config [ 'content' ] }}"
+      type: kubernetes.io/dockerconfigjson
+
+- name: namespace
+  k8s:
+    state: '{{ k8s_mgmt_ns_state }}'
+    definition:
+      kind: Namespace
+      metadata:
+        name: '{{ k8s_mgmt_ns }}'
+
+- include_vars: '{{ k8s_mgmt_app_group }}/{{ k8s_mgmt_app_name }}.yml'
+
+- name: configmap
+  k8s:
+    state: '{{ k8s_mgmt_configmap_state }}'
+    definition:
+      kind: ConfigMap
+      apiVersion: v1
+      metadata:
+        name: '{{ k8s_mgmt_configmap_name }}'
+        namespace: '{{ k8s_mgmt_ns }}'
+        labels:
+          k8s-app: '{{ k8s_mgmt_app_name }}'
+      data: '{{ k8s_mgmt_configmap }}'
+  when: k8s_mgmt_configmap | length > 0
+
+- include: '{{ k8s_mgmt_app_group }}/{{ k8s_mgmt_app_name }}.yml'
+
+- name: horizontal pod autoscaler
+  k8s:
+    state: '{{ k8s_mgmt_hpa_state }}'
+    definition:
+      apiVersion: autoscaling/v2beta1
+      kind: HorizontalPodAutoscaler
+      metadata:
+        labels:
+          k8s-app: '{{ k8s_mgmt_app_name }}'
+        name: '{{ k8s_mgmt_hpa_name }}'
+        namespace: '{{ k8s_mgmt_ns }}'
+      spec:
+        maxReplicas: '{{ k8s_mgmt_app_max_replicas }}'
+        minReplicas: '{{ k8s_mgmt_app_min_replicas }}'
+        metrics:
+          - type: Resource
+            resource:
+              name: cpu
+              targetAverageUtilization: '{{ k8s_mgmt_app_cpu_target_average_utilization }}'
+#          - type: Resource
+#            resource:
+#              name: memory
+#              targetAverageValue: '{{ k8s_mgmt_app_memory_target_average_value }}'
+        scaleTargetRef:
+          apiVersion: apps/v1
+          kind: Deployment
+          name: '{{ k8s_mgmt_app_name }}'
+  when: k8s_mgmt_app_min_replicas | length > 0
+
+- name: patch deployment
+  shell: >
+    kubectl patch deployment -n {{ k8s_mgmt_ns }} {{ k8s_mgmt_app_name }} -p
+    "{\"spec\":{\"template\":{\"metadata\":{\"labels\":{\"date\":\"{{ ansible_date_time.epoch }}\"}}}}}"
+  when: k8s_mgmt_patch_deployment | bool
+
+- name: service
+  k8s:
+    state: '{{ k8s_mgmt_service_state }}'
+    definition:
+      kind: Service
+      metadata:
+        name: '{{ k8s_mgmt_service_name }}'
+        namespace: '{{ k8s_mgmt_ns }}'
+        labels:
+          k8s-app: '{{ k8s_mgmt_app_name }}'
+      spec:
+        type: NodePort
+        ports:
+        - port: '{{ k8s_mgmt_service_port }}'
+          targetPort: '{{ k8s_mgmt_app_port }}'
+          protocol: TCP
+        selector:
+          k8s-app: '{{ k8s_mgmt_app_name }}'

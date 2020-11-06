@@ -1,0 +1,74 @@
+---
+
+- name: deployment
+  k8s:
+    state: '{{ k8s_mgmt_app_state }}'
+    force: yes
+    definition:
+      kind: Deployment
+      apiVersion: apps/v1
+      metadata:
+        labels:
+          k8s-app: '{{ k8s_mgmt_app_name }}'
+        name: '{{ k8s_mgmt_deployment_name }}'
+        namespace: '{{ k8s_mgmt_ns }}'
+      spec:
+        replicas: '{{ k8s_mgmt_app_replicas }}'
+        revisionHistoryLimit: '{{ k8s_mgmt_app_revision_history_limit }}'
+        strategy:
+          type: RollingUpdate
+          rollingUpdate:
+            partition: '{{ k8s_mgmt_app_rolling_update_partition }}'
+            maxSurge: '{{ k8s_mgmt_app_rolling_update_max_surge }}'
+            maxUnavailable: '{{ k8s_mgmt_app_rolling_update_max_unavailable }}'
+        selector:
+          matchLabels:
+            k8s-app: '{{ k8s_mgmt_app_name }}'
+        template:
+          metadata:
+            labels:
+              k8s-app: '{{ k8s_mgmt_app_name }}'
+          spec:
+            affinity:
+              nodeAffinity:
+                requiredDuringSchedulingIgnoredDuringExecution:
+                  nodeSelectorTerms:
+                    - matchExpressions:
+                      - key: node-role.kubernetes.io/master
+                        operator: NotIn
+                        values:
+                          - ""
+            containers:
+              - name: '{{ k8s_mgmt_app_name }}'
+                image: '{{ k8s_mgmt_image_name }}:{{ k8s_mgmt_image_tag }}'
+                volumeMounts:
+                  - name: '{{ k8s_mgmt_app_name }}'
+                    mountPath: /etc/nginx/conf.d
+                    subPath: nginx.conf
+                    readOnly: true
+                resources:
+                  requests:
+                    memory: '{{ k8s_mgmt_app_request_memory }}'
+                    cpu: '{{ k8s_mgmt_app_request_cpu }}'
+                  limits:
+                    memory: '{{ k8s_mgmt_app_limit_memory }}'
+                    cpu: '{{ k8s_mgmt_app_limit_cpu }}'
+                ports:
+                  - containerPort: '{{ k8s_mgmt_app_port }}'
+                    protocol: TCP
+                readinessProbe:
+                  tcpSocket:
+                    port: '{{ k8s_mgmt_app_port }}'
+                  initialDelaySeconds: '{{ k8s_mgmt_app_probe_initial_delay_seconds }}'
+                  periodSeconds: '{{ k8s_mgmt_app_probe_period_seconds }}'
+                livenessProbe:
+                  tcpSocket:
+                    port: '{{ k8s_mgmt_app_port }}'
+                  initialDelaySeconds: '{{ k8s_mgmt_app_probe_initial_delaySeconds }}'
+                  periodSeconds: '{{ k8s_mgmt_app_probe_period_seconds }}'
+                imagePullPolicy: Always
+            volumes:
+              - name: '{{ k8s_mgmt_app_name }}'
+                configMap:
+                  defaultMode: 0700
+                  name: '{{ k8s_mgmt_app_name }}'

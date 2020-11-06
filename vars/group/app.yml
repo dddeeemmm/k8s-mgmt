@@ -1,0 +1,20 @@
+k8s_mgmt_app_replicas: 2
+k8s_mgmt_app_request_memory: 256Mi
+k8s_mgmt_app_request_cpu: 256m
+k8s_mgmt_app_port: 80
+k8s_mgmt_app_probe_initial_delay_seconds: 30
+k8s_mgmt_app_probe_period_seconds: 10
+k8s_mgmt_service_port: 30000
+
+k8s_mgmt_configmap:
+  nginx.conf: |-
+    server {
+        listen 80;
+        server_name _;
+        charset utf-8;
+
+        location / {
+            try_files $uri $uri /index.html;
+            root   /usr/share/nginx/html;
+        }
+    }
